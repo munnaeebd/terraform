@@ -1,6 +1,6 @@
 # terraform-rnd
 
-Step-03: c2-variables.tf - Lists and Maps
+## Step-03: c2-variables.tf - Lists and Maps
 ```
 # AWS EC2 Instance Type - List
 variable "instance_type_list" {
@@ -21,7 +21,7 @@ variable "instance_type_map" {
   }
 }
 ```
-Step-05: c5-ec2instance.tf
+## Step-05: c5-ec2instance.tf
 ```
 # How to reference List values ?
 instance_type = var.instance_type_list[1]
