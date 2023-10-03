@@ -1,0 +1,79 @@
+{{- range .Values.modules }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name:  {{ .name }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: {{ .rollingUpdate_maxSurge }}
+      maxUnavailable: {{ .rollingUpdate_maxUnavailable }}
+  selector:
+    matchLabels:
+      module: {{ .name }}
+      app: {{ .name }}
+  template:
+    metadata:
+      labels:
+        module: {{ .name }}
+        app: {{ .name }}
+    spec:
+      containers:
+      - name: {{ .name }}
+        image: {{ $.Values.aws_account_id }}.dkr.ecr.{{ $.Values.region }}.amazonaws.com/{{ $.Values.env }}-{{ $.Values.project }}-{{ .name }}:{{ $.Values.commit_hash }}
+        imagePullPolicy: Always
+        ports:
+          - name: http
+            containerPort: {{ .containerPort }}
+        volumeMounts:
+          - mountPath: {{ .logPath }}
+            name: log-volume    
+        resources:
+          requests:
+            memory: {{ .requests_memory }}
+            cpu: {{ .requests_cpu }}
+          limits:
+            memory: {{ .limit_memory }}
+            cpu: {{ .limit_cpu }}
+        {{- if ne .name "policy-bundle-server" }}
+        envFrom:
+          - configMapRef:
+              name: {{ $.Values.env }}-{{ $.Values.project }}-{{ .name }}-cm
+        {{- end }}
+        {{- if ne .name "graphql-mw" }}
+        livenessProbe:
+          httpGet:
+            port: {{ .containerPort }}
+            path: {{ .health_check_url  }}
+          initialDelaySeconds: {{ .livenessProbe_initialDelaySeconds }}
+          periodSeconds: {{ .livenessProbe_periodSeconds }}
+        readinessProbe:
+          httpGet:
+            port: {{ .containerPort }}
+            path: {{ .health_check_url  }}
+          initialDelaySeconds: {{ .readinessProbe_initialDelaySeconds }}
+          periodSeconds: {{ .readinessProbe_periodSeconds }}
+        {{- end }}
+        {{- if eq .name "graphql-mw" }}
+        livenessProbe:
+          tcpSocket:
+            port: {{ .containerPort }}
+          initialDelaySeconds: {{ .livenessProbe_initialDelaySeconds }}
+          periodSeconds: {{ .livenessProbe_periodSeconds }}
+        readinessProbe:
+          tcpSocket:
+            port: {{ .containerPort }}
+          initialDelaySeconds: {{ .readinessProbe_initialDelaySeconds }}
+          periodSeconds: {{ .readinessProbe_periodSeconds }}
+        {{- end }}
+      terminationGracePeriodSeconds: {{ .terminationGracePeriodSeconds }}
+      volumes:
+        - name: log-volume
+          hostPath:
+            path: /var/log/rnd/{{ .name }}
+            type: DirectoryOrCreate
+{{- end }}

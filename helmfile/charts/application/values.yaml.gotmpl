@@ -1,0 +1,52 @@
+env: {{ .Values | get "global.env" "env" }}
+commit_hash: {{ .Values | get "global.commit_hash" "latest" }}
+aws_account_id: {{ .Values | get "global.aws_account_id" "aws_account_id" | quote}}
+region: {{ .Values | get "global.region" "region" }}
+project: {{ .Values | get "global.project" "project" }}
+namespace: {{ .Values | get "global.namespace" "namespace" }}
+
+dns:
+  example:
+    namespace: {{ .Values | get "dns.example.namespace" "default" }}
+    domain_name: {{ .Values | get "dns.example.domain_name" "default" }}
+    hosted_zone_id: {{ .Values | get "dns.example.hosted_zone_id" "default" }}
+
+ingress:
+  private_ingress:
+    name: {{ .Values | get "application.ingress.private_ingress.name" "ingress" }}
+    namespace: {{ .Values | get "application.ingress.private_ingress.namespace" "ingress" }}
+    private_subnet1: {{ .Values | get "application.ingress.private_ingress.private_subnet1" "private_subnet1" }}
+    private_subnet2: {{ .Values | get "application.ingress.private_ingress.private_subnet2" "private_subnet2" }}
+    private_subnet3: {{ .Values | get "application.ingress.private_ingress.private_subnet3" "private_subnet3" }}
+    acm_arn: {{ .Values | get "application.ingress.private_ingress.certificate_arn" "acm_arn" }}  
+
+modules:
+  {{- range $k, $v := .Values.application.modules }}
+  {{ $k }}:
+    name: {{ $v.name }}
+    replicas: {{ $v.replicas }}
+    maxreplicas: {{ $v.maxreplicas }}
+    containerPort: {{ $v.containerPort }}
+    servicePort: {{ $v.servicePort }}
+    serviceType: {{ $v.serviceType }}
+    logPath: {{ $v.logPath }}
+    requests_memory: {{ $v.requests_memory }}
+    requests_cpu: {{ $v.requests_cpu }}
+    limit_memory: {{ $v.limit_memory }}
+    limit_cpu: {{ $v.limit_cpu }}
+    livenessProbe_initialDelaySeconds: {{ $v.livenessProbe_initialDelaySeconds }}
+    livenessProbe_periodSeconds: {{ $v.livenessProbe_periodSeconds }}
+    readinessProbe_initialDelaySeconds: {{ $v.readinessProbe_initialDelaySeconds }}
+    readinessProbe_periodSeconds: {{ $v.readinessProbe_periodSeconds }}
+    terminationGracePeriodSeconds: {{ $v.terminationGracePeriodSeconds }}
+    health_check_url: {{ $v.health_check_url }}
+    rollingUpdate_maxSurge: {{ $v.rollingUpdate_maxSurge }}
+    rollingUpdate_maxUnavailable: {{ $v.rollingUpdate_maxUnavailable }}
+    recycler_pod_cron: "00 5 * * *"
+  {{- end }}
+
+configmap:
+  {{- range $k, $v := .Values.application.configmap }}
+  {{ $k }}:
+    {{ $v | toYaml | indent 4 | trim }}
+  {{- end }}

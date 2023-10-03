@@ -1,0 +1,7 @@
+dns:
+  example:
+    namespace: {{ .Values | get "dns.example.namespace" "default" }}
+    domain_name: {{ .Values | get "dns.example.domain_name" "default" }}
+    hosted_zone_id: {{ .Values | get "dns.example.hosted_zone_id" "default" }}
+project: {{ .Values | get "global.project" "project" }}
+aws_account_id: {{ .Values | get "global.aws_account_id" "aws_account_id" | quote}}

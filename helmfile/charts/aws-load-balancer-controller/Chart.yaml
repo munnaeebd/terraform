@@ -1,0 +1,8 @@
+apiVersion: v1
+name: aws-load-balancer-controller
+version: 2.4.7
+appVersion: 2.4.7
+description: aws-load-balancer-controller
+maintainers:
+  - email: devops@example.com
+    name: DevOps Team

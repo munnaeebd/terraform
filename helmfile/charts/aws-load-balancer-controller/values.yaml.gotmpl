@@ -1,0 +1,15 @@
+clusterName: {{ .Values | get "global.cluster_name" "eks-cluster" }}
+replicaCount: 2
+image:
+  tag: v2.4.7
+region: {{ .Values | get "global.region" "region" }}
+vpcId: {{ .Values | get "global.vpcId" "vpcId" }}
+account_id: {{ .Values | get "global.aws_account_id" "aws_account_id" | quote}}
+priorityClassName: system-cluster-critical
+createIngressClassResource: true
+disableIngressClassAnnotation: false
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 1

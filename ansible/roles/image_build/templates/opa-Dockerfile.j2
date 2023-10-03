@@ -1,0 +1,11 @@
+FROM busybox:latest AS builder
+
+WORKDIR /app
+COPY . .
+
+RUN ./opa build -t rego -o /var/bundle.tar.gz -b policy
+
+FROM openpolicyagent/opa:latest AS prod
+COPY --from=builder /var/bundle.tar.gz /var/bundle.tar.gz
+
+CMD ["run", "--server", "--bundle", "/var/bundle.tar.gz"]

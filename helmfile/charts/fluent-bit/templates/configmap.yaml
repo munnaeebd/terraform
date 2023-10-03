@@ -1,0 +1,80 @@
+{{- with .Values }}
+---
+apiVersion: v1
+data:
+  cluster.name: {{ .cluster_name }}
+  http.port: "2020"
+  http.server: "On"
+  logs.region: {{ .aws_region }}
+  read.head: "Off"
+  read.tail: "On"
+kind: ConfigMap
+metadata:
+  name: fluent-bit-cluster-info
+  namespace: fluent-bit
+---
+apiVersion: v1
+data:
+  application-log.conf: |
+{{- range $i, $module := .names }}
+    [INPUT]
+        Name                tail
+        Tag                 {{ $.Values.env}}-{{ $.Values.project}}-{{ $module }}*
+        Exclude_Path        /var/log/containers/cloudwatch-agent*, /var/log/containers/fluent-bit*, /var/log/containers/aws-node*, /var/log/containers/kube-proxy*
+        Path                /var/log/rnd/{{ $module }}/*.log
+        multiline.parser    docker, cri
+        DB                  /var/fluent-bit/state/flb_container.db
+        Mem_Buf_Limit       50MB
+        Skip_Long_Lines     On
+        Refresh_Interval    10
+        Rotate_Wait         30
+        storage.type        filesystem
+        Read_from_Head      ${READ_FROM_HEAD}
+
+    [OUTPUT]
+        Name                cloudwatch_logs
+        Match               {{ $.Values.env}}-{{ $.Values.project}}-{{ $module }}*
+        region              {{ $.Values.aws_region}}
+        log_group_name      {{ $.Values.env}}-{{ $.Values.project}}-{{ $module }}
+        log_stream_name     {{ $module }}
+        auto_create_group   true
+        extra_user_agent    container-insights
+
+{{- end }}
+  fluent-bit.conf: "[SERVICE]\n    Flush                     5\n    Grace                     30\n
+    \   Log_Level                 info\n    Daemon                    off\n    Parsers_File
+    \             parsers.conf\n    HTTP_Server               ${HTTP_SERVER}\n    HTTP_Listen
+    \              0.0.0.0\n    HTTP_Port                 ${HTTP_PORT}\n    storage.path
+    \             /var/fluent-bit/state/flb-storage/\n    storage.sync              normal\n
+    \   storage.checksum          off\n    storage.backlog.mem_limit 5M\n    \n@INCLUDE
+    application-log.conf\n"
+
+  parsers.conf: |
+    [PARSER]
+        Name                syslog
+        Format              regex
+        Regex               ^(?<time>[^ ]* {1,2}[^ ]* [^ ]*) (?<host>[^ ]*) (?<ident>[a-zA-Z0-9_\/\.\-]*)(?:\[(?<pid>[0-9]+)\])?(?:[^\:]*\:)? *(?<message>.*)$
+        Time_Key            time
+        Time_Format         %b %d %H:%M:%S
+
+    [PARSER]
+        Name                container_firstline
+        Format              regex
+        Regex               (?<log>(?<="log":")\S(?!\.).*?)(?<!\\)".*(?<stream>(?<="stream":").*?)".*(?<time>\d{4}-\d{1,2}-\d{1,2}T\d{2}:\d{2}:\d{2}\.\w*).*(?=})
+        Time_Key            time
+        Time_Format         %Y-%m-%dT%H:%M:%S.%LZ
+
+    [PARSER]
+        Name                cwagent_firstline
+        Format              regex
+        Regex               (?<log>(?<="log":")\d{4}[\/-]\d{1,2}[\/-]\d{1,2}[ T]\d{2}:\d{2}:\d{2}(?!\.).*?)(?<!\\)".*(?<stream>(?<="stream":").*?)".*(?<time>\d{4}-\d{1,2}-\d{1,2}T\d{2}:\d{2}:\d{2}\.\w*).*(?=})
+        Time_Key            time
+        Time_Format         %Y-%m-%dT%H:%M:%S.%LZ
+kind: ConfigMap
+metadata:
+  labels:
+    k8s-app: fluent-bit
+  name: fluent-bit-config
+  namespace: fluent-bit
+
+{{- end }}

@@ -1,0 +1,13 @@
+global:
+  licenseKey: {{ .Values | get "new_relic.licensekey" "licenseKey" }}
+  cluster: {{ .Values | get "global.cluster_name" "eks-cluster" }}
+kubeEvents:
+  enabled: true
+webhook:
+  enabled: true
+prometheus:
+  enabled: true
+logging:
+  enabled: false
+ksm:
+  enabled: true

@@ -1,0 +1,16 @@
+{{- with .Values.global }}
+
+aws_region: {{ .region }}
+env : {{ .env }}
+project : {{ .project }}
+cluster_name: {{ .env }}-{{ .project }}-eks-cluster
+
+{{- end }}
+
+{{- with .Values.application }}
+names:
+{{- range $k, $v := .modules }}
+  - {{ $v.name }}
+{{- end }} 
+
+{{- end }}

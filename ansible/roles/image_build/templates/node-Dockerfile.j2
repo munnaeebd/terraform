@@ -1,0 +1,27 @@
+FROM node:18-alpine AS build
+RUN npm i -g pnpm
+WORKDIR /app
+ARG GITHUB_PASSWORD_ACCESS_TOKEN
+ARG GITHUB_EMAIL
+COPY .npmrc .
+COPY package.json .
+RUN pnpm install
+COPY . .
+RUN rm -f .npmrc
+RUN pnpm run build
+
+FROM node:18-alpine
+RUN npm i -g pnpm
+WORKDIR /app
+ARG GITHUB_PASSWORD_ACCESS_TOKEN
+ARG GITHUB_EMAIL
+COPY .npmrc .
+COPY package.json .
+RUN pnpm install --production
+COPY . .
+RUN rm -f .npmrc
+COPY --from=build /app/dist /app/dist
+
+# Using root user to run the project
+USER root
+CMD ["pnpm", "start:{{ env }}"]

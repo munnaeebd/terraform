@@ -1,0 +1,118 @@
+global:
+  cluster_name: uat-rnd-eks-cluster
+  region: ap-southeast-1
+  vpcId: vpc-xxxxxxxxx
+  env: uat
+  commit_hash: latest
+  aws_account_id: "12345678"
+  project: rnd
+new_relic:
+  licensekey: xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+cronjobs:
+  successfulJobsHistoryLimit: 3
+dns:
+  example:
+    namespace: rnd
+    domain_name: uatrnd.example.com
+    hosted_zone_id: zzzzzzzzzzzzzzz
+
+application:
+  ingress:
+    private_ingress:
+      name: private-alb
+      namespace: rnd
+      private_subnet1: subnet-xxxxxxxxxxx
+      private_subnet2: subnet-xxxxxxxxxxx
+      private_subnet3: subnet-xxxxxxxxxxx
+      certificate_arn: arn:aws:acm:ap-southeast-1:12345678:certificate/xxxxxxxxxxxxxxxxxxx
+  version: latest
+
+  modules:
+    mw1:
+      name: mw1
+      replicas: 1
+      maxreplicas: 1
+      containerPort: 80
+      servicePort: 8080
+      serviceType: NodePort
+      requests_memory: 256Mi
+      requests_cpu: 100m
+      limit_memory: 512Mi
+      limit_cpu: 100m
+      livenessProbe_initialDelaySeconds: 60
+      livenessProbe_periodSeconds: 25
+      readinessProbe_initialDelaySeconds: 60
+      readinessProbe_periodSeconds: 25
+      terminationGracePeriodSeconds: 60
+      health_check_url: /api/mw1/health
+      rollingUpdate_maxSurge: 50%
+      rollingUpdate_maxUnavailable: 25%
+      logPath: /var/log/rnd/mw1
+
+    mw2:
+      name: mw2
+      replicas: 1
+      maxreplicas: 1
+      containerPort: 80
+      servicePort: 8080
+      serviceType: NodePort
+      requests_memory: 256Mi
+      requests_cpu: 100m
+      limit_memory: 512Mi
+      limit_cpu: 100m
+      livenessProbe_initialDelaySeconds: 60
+      livenessProbe_periodSeconds: 25
+      readinessProbe_initialDelaySeconds: 60
+      readinessProbe_periodSeconds: 25
+      terminationGracePeriodSeconds: 60
+      health_check_url: /api/mw2/health
+      rollingUpdate_maxSurge: 50%
+      rollingUpdate_maxUnavailable: 25%
+      logPath: /var/log/rnd/mw2
+
+    mw3:
+      name: mw3
+      replicas: 1
+      maxreplicas: 1
+      containerPort: 80
+      servicePort: 8080
+      serviceType: NodePort
+      requests_memory: 256Mi
+      requests_cpu: 100m
+      limit_memory: 512Mi
+      limit_cpu: 100m
+      livenessProbe_initialDelaySeconds: 60
+      livenessProbe_periodSeconds: 25
+      readinessProbe_initialDelaySeconds: 60
+      readinessProbe_periodSeconds: 25
+      terminationGracePeriodSeconds: 60
+      health_check_url: /api/mw3/health
+      rollingUpdate_maxSurge: 50%
+      rollingUpdate_maxUnavailable: 25%
+      logPath: /var/log/rnd/mw3
+
+  configmap:
+    mw1:
+      ENV: UAT
+      name: mw1
+      PORT: "80"
+      HOST: api.example.com
+      REST_API_PREFIX: "api"
+      DB_1: db_name1
+      sqs_1: sqs_name1
+    mw2:
+      ENV: UAT
+      name: mw2
+      PORT: "80"
+      HOST: api.example.com
+      REST_API_PREFIX: "api"
+      DB_1: db_name1
+      sqs_1: sqs_name1      
+    mw3:
+      ENV: UAT
+      name: mw3
+      PORT: "80"
+      HOST: api.example.com
+      REST_API_PREFIX: "api"
+      DB_1: db_name1
+      sqs_1: sqs_name1

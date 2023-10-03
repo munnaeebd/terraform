@@ -1,0 +1,64 @@
+---
+- name: ECR Login
+  shell: aws ecr get-login-password --region {{ aws_region }} | docker login --username AWS --password-stdin {{ aws_account_id }}.dkr.ecr.{{ aws_region }}.amazonaws.com
+  args:
+    executable: /bin/bash
+
+- name: Generate Image Tag
+  shell: git log --format="%H" -n 1
+  args:
+    chdir: "{{ workspace }}/{{ MWRepo }}"
+  register: code_commit_id
+
+- debug: var=code_commit_id.stdout_lines
+
+- name: Generate {{ module }} Dockerfile for Node-18
+  template:
+    src: node-Dockerfile.j2
+    dest: "{{ workspace }}/{{ MWRepo }}/{{ module }}/Dockerfile"
+    trim_blocks: yes
+  when:
+    - module == "mw1"
+
+- name: Generate {{ module }} Dockerfile for GO-Lang
+  template:
+    src: go-Dockerfile.j2
+    dest: "{{ workspace }}/{{ MWRepo }}/{{ module }}/Dockerfile"
+    trim_blocks: yes
+  when:
+    - module == "mw2"
+
+
+- name: Generate {{ module }} Dockerfile for mvn+jdk
+  template:
+    src: mvn-jdk-Dockerfile.j2
+    dest: "{{ workspace }}/{{ MWRepo }}/{{ module }}/Dockerfile"
+    trim_blocks: yes
+  when:
+    - module == "mw3"
+    
+
+
+- name: Download OPA binary and copy to module directory
+  get_url:
+    url: https://openpolicyagent.org/downloads/v0.56.0/opa_linux_amd64_static
+    dest: "{{ workspace }}/{{ MWRepo }}/{{ module }}/opa"
+    mode: '0775'
+
+- name: Build Docker Image
+  docker_image:
+    build:
+      path: "{{ workspace }}/{{ MWRepo }}/{{ module }}/"
+      args:
+        # BASE_URL: "https://{{ project_base_url }}"
+        GITHUB_PASSWORD_ACCESS_TOKEN: "{{ GITHUB_TOKEN }}"
+        CF_DIST_ID: "{{ CF_DIST_ID }}"
+        API_URL: "{{ API_URL }}"
+        MOCKER_ENABLED: "{{ MOCKER_ENABLED }}"
+    name: "{{ aws_account_id }}.dkr.ecr.{{ aws_region }}.amazonaws.com/{{ env }}-{{ project_name }}-{{ module }}:local"
+    push: no
+    state: present
+    source: build
+  notify:
+    - Tag Image and Push to ECR [GIT COMMIT HASH]
+    - Tag Image and Push to ECR [LATEST]

@@ -1,0 +1,30 @@
+# Import base image
+FROM maven:3.6.3-jdk-11 AS build
+# Creating app directory
+# Copying pom
+COPY ./pom.xml ./pom.xml
+# Go offline for faster build
+RUN mvn dependency:go-offline
+# Copying src
+COPY ./src ./src
+# Getting .m2 libraries
+RUN mvn clean package
+# RUN --mount=type=cache,target=/root/.m2 mvn clean package
+
+## Third Phase
+FROM openjdk:11-jdk
+# Build version from arg
+ARG BUILD_VERSION=0.0.1-SNAPSHOT
+# Setting up timezone
+ENV TZ="Asia/Dhaka"
+RUN apt-get update -y
+RUN apt-get install -y fontconfig libfreetype6
+RUN  apt-get install -yq tzdata && ln -fs /usr/share/zoneinfo/Asia/Dhaka /etc/localtime &&  dpkg-reconfigure -f noninteractive tzdata
+# Creating app directory
+WORKDIR /usr/src/app
+# Copying Jar
+COPY --from=build ./target/{{ module }}-$BUILD_VERSION.jar /usr/app/{{ module }}.jar
+# Exposing Port
+EXPOSE 8080
+# Running App
+ENTRYPOINT ["java","-jar","/usr/app/{{ module }}.jar"]

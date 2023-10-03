@@ -1,0 +1,22 @@
+# Build stage
+FROM golang:1.18-alpine3.14 AS builder
+
+ARG GITHUB_PASSWORD_ACCESS_TOKEN
+# RUN echo "GITHUB_PASSWORD_ACCESS_TOKEN=$GITHUB_PASSWORD_ACCESS_TOKEN"
+
+RUN apk update && apk add git
+
+WORKDIR /app
+COPY go.mod go.sum ./
+RUN go mod tidy
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main
+
+# Run final stage
+FROM alpine:3.14
+WORKDIR /app
+COPY --from=builder /app/main .
+EXPOSE 8080
+
+# Command to run the executable
+CMD ["/app/main"]

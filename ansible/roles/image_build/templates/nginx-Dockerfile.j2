@@ -1,0 +1,40 @@
+FROM node:18-alpine AS build
+ARG API_URL
+ARG MOCKER_ENABLED
+RUN npm i -g pnpm
+WORKDIR /app
+COPY package*.json ./
+COPY pnpm-lock.yaml .
+RUN pnpm install
+COPY . .
+RUN pnpm run build
+
+FROM amazon/aws-cli AS export
+
+# copy the nginx configuration
+# COPY --from=build /app/nginx.conf /etc/nginx/nginx.conf
+
+# Remove the default Nginx website that comes with the image
+# RUN rm -rf /usr/share/nginx/html/*
+
+# Copy the dist/spa folder of your Quasar app to the default Nginx website directory
+# copy the built app from the previous stage
+
+ARG CF_DIST_ID
+ARG API_URL
+ARG MOCKER_ENABLED
+
+# Copy distribution to working directory
+WORKDIR /dist
+COPY --from=build /app/dist/spa/ .
+
+# Update S3 bucket
+RUN aws s3 sync . s3://{{ env }}-rnd-ui
+
+# Invalidate Cloudfront Cache
+RUN aws cloudfront create-invalidation --distribution-id $CF_DIST_ID --paths "/*"
+
+# EXPOSE 80
+
+# start nginx
+# CMD ["nginx", "-g", "daemon off;"]

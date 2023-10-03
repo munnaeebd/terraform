@@ -1,0 +1,11 @@
+---
+##Common
+aws_account_id: 12345678
+env: uat
+project_name: rnd
+MWRepo: codebase
+aws_region: ap-southeast-1
+GITHUB_PASSWORD_ACCESS_TOKEN: na
+CF_DIST_ID: "12345ABCDE"
+API_URL: https://example.com
+MOCKER_ENABLED: "false"

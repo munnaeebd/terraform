@@ -1,0 +1,23 @@
+# Use official Maven image as the base
+FROM maven:3.8.4-openjdk-11-slim
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy the project's Maven configuration files
+COPY pom.xml .
+
+# Go offline for faster build
+RUN mvn dependency:go-offline
+
+# Copy the source code to the container
+COPY src ./src
+
+# Build the project with Maven
+RUN mvn clean package -DskipTests
+
+# Exposing Port
+# EXPOSE 9000
+
+# Running App
+ENTRYPOINT ["java","-jar","target/{{ module }}.jar"]

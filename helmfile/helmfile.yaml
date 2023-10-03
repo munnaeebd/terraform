@@ -1,0 +1,103 @@
+# Environments
+environments:
+  uat:
+    values:
+    - env/uat.yaml
+  sit:
+    values:
+    - env/sit.yaml
+  prod:
+    values:
+    - env/prod.yaml
+
+# Common Labels
+commonLabels:
+  Owner: x-company
+  Environment: {{ .Environment.Name }}
+  Project: rnd
+
+# Templates
+templates:
+  default: &default
+    chart: ./charts/{{`{{ .Release.Name }}`}}/{{`{{ .Release.Name }}`}}-{{`{{ .Release.Labels.version }}`}}.tgz
+    missingFileHandler: Warn
+    values:
+    - charts/{{`{{ .Release.Name }}`}}/values.yaml.gotmpl
+  custom: &custom
+    chart: ./charts/{{`{{ .Release.Name }}`}}
+    missingFileHandler: Warn
+    values:
+      - charts/{{`{{ .Release.Name }}`}}/values.yaml.gotmpl
+
+# Releases
+releases:
+
+- name: reloader
+  installed: true
+  namespace: kube-system
+  labels:
+    tier: controller
+    version: v1.0.15
+  <<: *default
+
+- name: application
+  installed: true
+  namespace: rnd
+  labels:
+    tier: application
+    version: v0.1.0
+  <<: *custom
+
+- name: aws-load-balancer-controller
+  installed: true
+  namespace: kube-system
+  disableValidationOnInstall: true
+  labels:
+    tier: controller
+    version: 2.4.7
+  <<: *custom
+  wait: true
+  needs:
+    - kube-system/cert-manager
+- name: fluent-bit
+  installed: true
+  namespace: fluent-bit
+  labels:
+    tier: logging
+    version: 2.1.5
+  <<: *custom
+
+- name: cert-manager
+  namespace: kube-system
+  installed: true
+  disableValidationOnInstall: true
+  labels:
+    tier: controller
+    version: v1.11.1
+  hooks:
+  - events: ["presync"]
+    showlogs: true
+    command: kubectl
+    args:
+    - 'apply'
+    - '--validate=true'
+    - '--filename=https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.crds.yaml'
+  <<: *default
+  wait: true
+
+- name: external-dns
+  installed: true
+  namespace: kube-system
+  labels:
+    tier: controller
+    version: 0.12.0
+  <<: *custom
+
+- name: nri-bundle
+  installed: true
+  namespace: monitoring
+  labels:
+    tier: monitoring
+    version: 5.0.2
+  <<: *default
+  wait: true  

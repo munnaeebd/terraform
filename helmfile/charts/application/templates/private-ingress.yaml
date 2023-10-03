@@ -1,0 +1,78 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: private-alb
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/load-balancer-name: "{{ $.Values.env }}-{{ $.Values.project }}-{{ $.Values.ingress.private_ingress.name }}"
+    alb.ingress.kubernetes.io/scheme: internal
+    alb.ingress.kubernetes.io/subnets: {{ .Values.ingress.private_ingress.private_subnet1 }}, {{ .Values.ingress.private_ingress.private_subnet2 }}, {{ .Values.ingress.private_ingress.private_subnet3 }}
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
+    alb.ingress.kubernetes.io/actions.ssl-redirect: '{"Type": "redirect", "RedirectConfig": { "Protocol": "HTTPS", "Port": "443", "StatusCode": "HTTP_301"}}'
+    alb.ingress.kubernetes.io/target-type: instance
+    alb.ingress.kubernetes.io/inbound-cidrs: 0.0.0.0/0
+    alb.ingress.kubernetes.io/certificate-arn: {{ .Values.ingress.private_ingress.acm_arn }}
+    alb.ingress.kubernetes.io/healthcheck-path: /actuator/health
+    alb.ingress.kubernetes.io/success-codes: "404"    
+    #external-dns.alpha.kubernetes.io/hostname: admin.{{ .Values.domain_name }}, callback.{{ .Values.domain_name }}, admin-app.{{ .Values.domain_name }}
+spec:
+  rules:
+  - http:
+      paths:
+       - path: /*
+         pathType: ImplementationSpecific
+         backend:
+          service:
+            name: ssl-redirect
+            port:
+              name: use-annotation
+
+  - host: api.{{ .Values.dns.example.domain_name }}
+    http:
+      paths:
+        - backend:
+            service:
+              name: {{ .Values.modules.mw1.name }}
+              port:
+                number: {{ .Values.modules.mw1.servicePort }}
+          path: /api/mw1/*
+          pathType: ImplementationSpecific
+        - backend:
+            service:
+              name: {{ .Values.modules.mw1.name }}
+              port:
+                number: {{ .Values.modules.mw1.servicePort }}
+          path: /api/mw1_1/*
+          pathType: ImplementationSpecific
+
+        - backend:
+            service:
+              name: {{ .Values.modules.mw2.name }}
+              port:
+                number: {{ .Values.modules.mw2.servicePort }}
+          path: /api/mw2s/*
+          pathType: ImplementationSpecific
+
+        - backend:
+            service:
+              name: {{ .Values.modules.mw3.name }}
+              port:
+                number: {{ .Values.modules.mw3.servicePort }}
+          path: /api/mw3s/*
+          pathType: ImplementationSpecific
+
+        - backend:
+            service:
+              name: {{ .Values.modules.mw4.name }}
+              port:
+                number: {{ .Values.modules.mw4.servicePort }}
+          path: /api/mw4s/*
+          pathType: ImplementationSpecific          
+
+        - backend:
+            service:
+              name: {{ .Values.modules.mw4_2nd.name }}
+              port:
+                number: {{ .Values.modules.mw4_2nd.servicePort }}
+          path: /api/mw4-2nd/*
+          pathType: ImplementationSpecific   

@@ -1,0 +1,8 @@
+---
+##Common
+aws_account_id: 12345678
+env: prod
+project_name: test
+MWRepo: codebase
+aws_region: ap-southeast-1
+GITHUB_PASSWORD_ACCESS_TOKEN: na
